@@ -28,14 +28,23 @@ if st.button("Generate Analysis"):
 
         # Clean previous files
         status_placeholder.info("🧹 Cleaning previous files...")
+        
         output_dir = "outputs"
-        for f in os.listdir(output_dir):
-            file_path = os.path.join(output_dir, f)
-            try:
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-            except Exception as e:
-                print(f"Error deleting {file_path}: {e}")
+        temp_dir = "temp"  # If you have a temp folder too, add it here
+        
+        for folder in [output_dir, temp_dir]:
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            else:
+                for filename in os.listdir(folder):
+                    file_path = os.path.join(folder, filename)
+                    try:
+                        if os.path.isfile(file_path) or os.path.islink(file_path):
+                            os.unlink(file_path)
+                        elif os.path.isdir(file_path):
+                            shutil.rmtree(file_path)
+                    except Exception as e:
+                        print(f"Error deleting {file_path}: {e}")
 
         # Step 1: Download
         status_placeholder.info("⬇️ Downloading audio and video... Time depends on the video length and quality.")
