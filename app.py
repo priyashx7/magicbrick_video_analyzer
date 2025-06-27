@@ -22,7 +22,7 @@ st.title("🎙️ MBTV Video Analyzer")
 youtube_url = st.text_input("Paste a YouTube video link from MBTV:")
 
 if st.button("Generate Analysis"):
-    with st.spinner("Processing... Please wait. Estimated time 1-4 minutes."):
+    with st.spinner("Processing... Please wait. Estimated time 2-5 minutes."):
 
         status_placeholder = st.empty()
 
@@ -62,8 +62,10 @@ if st.button("Generate Analysis"):
             st.stop()
 
         # Step 2: Transcribe
-        status_placeholder.info("📝 Transcribing... (trying YouTube captions first)")
-        transcript, segments = transcribe_audio(audio_path, youtube_url)
+        # status_placeholder.info("📝 Transcribing... (trying YouTube captions first)")
+        # transcript, segments = transcribe_audio(audio_path, youtube_url)
+        transcript, segments = transcribe_audio(audio_path, youtube_url, status_placeholder)
+
 
         if transcript:
             status_placeholder.success("✅ Transcription Complete.")
