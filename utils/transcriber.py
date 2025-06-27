@@ -1,13 +1,27 @@
 
+# import whisper
+# import re
+# import streamlit as st  # ✅ Add this
+# from youtube_transcript_api import (
+#     YouTubeTranscriptApi,
+#     TranscriptsDisabled,
+#     NoTranscriptFound,
+#     CouldNotRetrieveTranscript
+# )
 import whisper
 import re
-import streamlit as st  # ✅ Add this
+import json
+import requests
+import streamlit as st
+from xml.etree import ElementTree as ET
+
 from youtube_transcript_api import (
-    YouTubeTranscriptApi,
     TranscriptsDisabled,
     NoTranscriptFound,
     CouldNotRetrieveTranscript
 )
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 def extract_video_id(youtube_url: str) -> str:
     pattern = r"(?:v=|\/)([0-9A-Za-z_-]{11}).*"
@@ -53,18 +67,6 @@ def extract_video_id(youtube_url: str) -> str:
 #         return None, None
 
 
-import whisper
-import re
-import json
-import requests
-import streamlit as st
-from xml.etree import ElementTree as ET  # for parsing YouTube caption XML
-
-from youtube_transcript_api import (
-    TranscriptsDisabled,
-    NoTranscriptFound,
-    CouldNotRetrieveTranscript
-)
 
 def try_youtube_captions(youtube_url: str):
     try:
@@ -73,24 +75,29 @@ def try_youtube_captions(youtube_url: str):
             st.warning("❌ Invalid YouTube URL or video ID.")
             return None, None
 
-        # 🛡️ Get proxy URL from Streamlit secrets
         proxy_url = st.secrets["PROXY_URL"]
         proxies = {
             "http": proxy_url,
             "https": proxy_url
         }
 
-        # Direct YouTube caption API URL
         transcript_url = f"https://video.google.com/timedtext?lang=en&v={video_id}"
 
-        # Make request via proxy
-        response = requests.get(transcript_url, proxies=proxies, timeout=10)
+        # ✅ Session with retry logic
+        session = requests.Session()
+        retries = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+        session.mount('http://', HTTPAdapter(max_retries=retries))
+
+        response = session.get(transcript_url, proxies=proxies, timeout=10, verify=False)
+
+        print(f"[DEBUG] Proxy request status: {response.status_code}")
+        print(f"[DEBUG] Proxy response text: {response.text[:200]}")
 
         if response.status_code != 200 or not response.text:
             st.warning("⚠️ Captions not available or blocked. Using Whisper instead.")
             return None, None
 
-        # Parse XML captions
         root = ET.fromstring(response.text)
         segments = []
         full_text = ""
@@ -113,6 +120,7 @@ def try_youtube_captions(youtube_url: str):
         st.warning("⚠️ Proxy caption fetch failed. Falling back to Whisper.")
         print(f"[Proxy error] {e}")
         return None, None
+
 
 
 
