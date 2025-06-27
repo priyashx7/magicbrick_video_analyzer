@@ -75,29 +75,18 @@ def try_youtube_captions(youtube_url: str):
             st.warning("❌ Invalid YouTube URL or video ID.")
             return None, None
 
+        # 🛡️ Proxy logic (keep as is if you’re using proxy)
         proxy_url = st.secrets["PROXY_URL"]
-        proxies = {
-            "http": proxy_url,
-            "https": proxy_url
-        }
-
+        proxies = {"http": proxy_url, "https": proxy_url}
         transcript_url = f"https://video.google.com/timedtext?lang=en&v={video_id}"
 
-        # ✅ Session with retry logic
-        session = requests.Session()
-        retries = Retry(total=3, backoff_factor=1, status_forcelist=[500, 502, 503, 504])
-        session.mount('https://', HTTPAdapter(max_retries=retries))
-        session.mount('http://', HTTPAdapter(max_retries=retries))
+        response = requests.get(transcript_url, proxies=proxies, timeout=10)
 
-        response = session.get(transcript_url, proxies=proxies, timeout=10, verify=False)
-
-        print(f"[DEBUG] Proxy request status: {response.status_code}")
-        print(f"[DEBUG] Proxy response text: {response.text[:200]}")
-
-        if response.status_code != 200 or not response.text:
-            st.warning("⚠️ Captions not available or blocked. Using Whisper instead.")
+        if response.status_code != 200 or not response.text.strip():
+            st.info("⚠️ YouTube captions not available or blocked. Using Whisper instead.")
             return None, None
 
+        # ✅ Parse XML captions
         root = ET.fromstring(response.text)
         segments = []
         full_text = ""
@@ -116,9 +105,9 @@ def try_youtube_captions(youtube_url: str):
         st.info("✅ Used YouTube captions via proxy.")
         return full_text.strip(), segments
 
-    except Exception as e:
-        st.warning("⚠️ Proxy caption fetch failed. Falling back to Whisper.")
-        print(f"[Proxy error] {e}")
+    except Exception:
+        # 👇 Always show short fallback
+        st.info("⚠️ YouTube captions not available or blocked. Using Whisper instead.")
         return None, None
 
 
