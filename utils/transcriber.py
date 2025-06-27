@@ -53,6 +53,19 @@ def extract_video_id(youtube_url: str) -> str:
 #         return None, None
 
 
+import whisper
+import re
+import json
+import requests
+import streamlit as st
+from xml.etree import ElementTree as ET  # for parsing YouTube caption XML
+
+from youtube_transcript_api import (
+    TranscriptsDisabled,
+    NoTranscriptFound,
+    CouldNotRetrieveTranscript
+)
+
 def try_youtube_captions(youtube_url: str):
     try:
         video_id = extract_video_id(youtube_url)
@@ -60,45 +73,47 @@ def try_youtube_captions(youtube_url: str):
             st.warning("❌ Invalid YouTube URL or video ID.")
             return None, None
 
-        # ✅ Set up proxy from Streamlit secrets
+        # 🛡️ Get proxy URL from Streamlit secrets
         proxy_url = st.secrets["PROXY_URL"]
         proxies = {
             "http": proxy_url,
             "https": proxy_url
         }
 
-        # ✅ Pass proxy into API call
-        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
+        # Direct YouTube caption API URL
+        transcript_url = f"https://video.google.com/timedtext?lang=en&v={video_id}"
 
-        try:
-            # Try manually created English transcript first
-            transcript = transcript_list.find_transcript(['en', 'en-IN'])
-        except:
-            # If not found, fallback to any available auto-generated
-            transcript = transcript_list.find_generated_transcript(transcript_list._generated_transcripts.keys())
+        # Make request via proxy
+        response = requests.get(transcript_url, proxies=proxies, timeout=10)
 
-        raw_segments = transcript.fetch()
-        full_text = " ".join([seg.text for seg in raw_segments])
+        if response.status_code != 200 or not response.text:
+            st.warning("⚠️ Captions not available or blocked. Using Whisper instead.")
+            return None, None
 
-        segments = [
-            {
-                "start": seg.start,
-                "end": seg.start + seg.duration,
-                "text": seg.text
-            }
-            for seg in raw_segments
-        ]
+        # Parse XML captions
+        root = ET.fromstring(response.text)
+        segments = []
+        full_text = ""
 
-        st.info(f"✅ Used YouTube captions for transcription. Language: {transcript.language_code}")
-        return full_text, segments
+        for child in root.findall("text"):
+            start = float(child.attrib["start"])
+            dur = float(child.attrib.get("dur", "1.0"))
+            text = (child.text or "").replace("\n", " ")
+            full_text += text + " "
+            segments.append({
+                "start": start,
+                "end": start + dur,
+                "text": text
+            })
 
-    except (TranscriptsDisabled, NoTranscriptFound, CouldNotRetrieveTranscript) as e:
-        st.warning("⚠️ Unable to retrieve captions from YouTube. Using Whisper instead.")
-        return None, None
+        st.info("✅ Used YouTube captions via proxy.")
+        return full_text.strip(), segments
+
     except Exception as e:
-        st.error("❌ Unknown error during YouTube caption extraction. Falling back to Whisper.")
-        print(f"[ERROR] Caption extraction failed: {e}")
+        st.warning("⚠️ Proxy caption fetch failed. Falling back to Whisper.")
+        print(f"[Proxy error] {e}")
         return None, None
+
 
 
 def transcribe_audio(audio_path: str, youtube_url: str = None):
