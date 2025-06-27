@@ -47,16 +47,14 @@ if st.button("Generate Analysis"):
             st.stop()
 
         # Step 2: Transcribe
-        status_placeholder.info("📝 Transcribing... (trying YouTube captions first, then Whisper if needed)")
-        
+        status_placeholder.info("📝 Transcribing... (trying YouTube captions first)")
         transcript, segments = transcribe_audio(audio_path, youtube_url)
-        
+
         if transcript:
             status_placeholder.success("✅ Transcription Complete.")
         else:
             status_placeholder.error("❌ Failed to generate transcript.")
             st.stop()
-
 
         # Step 3: Reel Chunks
         status_placeholder.info("🎞️ Extracting top reel-worthy chunks...")
