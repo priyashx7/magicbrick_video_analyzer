@@ -220,25 +220,15 @@ if st.button("Generate Analysis"):
             st.stop()
 
         # Step 2: Transcribe
-        status_placeholder.info("📝 Trying YouTube captions via proxy...")
+        status_placeholder.info("📝 Transcribing... (trying YouTube captions first, then Whisper if needed)")
         
-        # Call the new transcribe function but split it
-        from utils.transcriber import try_youtube_captions, transcribe_with_whisper
-        
-        # First try captions directly:
-        transcript, segments = try_youtube_captions(youtube_url)
+        transcript, segments = transcribe_audio(audio_path, youtube_url)
         
         if transcript:
-            status_placeholder.success("✅ Transcription Complete using YouTube captions.")
+            status_placeholder.success("✅ Transcription Complete.")
         else:
-            status_placeholder.info("⚠️ Captions failed. Using Whisper instead...")
-            transcript, segments = transcribe_with_whisper(audio_path)
-        
-            if transcript:
-                status_placeholder.success("✅ Transcription Complete using Whisper.")
-            else:
-                status_placeholder.error("❌ Failed to generate transcript.")
-                st.stop()
+            status_placeholder.error("❌ Failed to generate transcript.")
+            st.stop()
 
 
         # Step 3: Reel Chunks
