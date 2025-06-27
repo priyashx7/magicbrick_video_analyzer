@@ -67,7 +67,6 @@ def extract_video_id(youtube_url: str) -> str:
 #         return None, None
 
 
-
 def try_youtube_captions(youtube_url: str):
     try:
         video_id = extract_video_id(youtube_url)
@@ -75,7 +74,7 @@ def try_youtube_captions(youtube_url: str):
             st.warning("❌ Invalid YouTube URL or video ID.")
             return None, None
 
-        # 🛡️ Proxy logic (keep as is if you’re using proxy)
+        # Use proxy from secrets
         proxy_url = st.secrets["PROXY_URL"]
         proxies = {"http": proxy_url, "https": proxy_url}
         transcript_url = f"https://video.google.com/timedtext?lang=en&v={video_id}"
@@ -83,10 +82,11 @@ def try_youtube_captions(youtube_url: str):
         response = requests.get(transcript_url, proxies=proxies, timeout=10)
 
         if response.status_code != 200 or not response.text.strip():
-            st.info("⚠️ YouTube captions not available or blocked. Using Whisper instead.")
+            # Short clear fallback
+            st.info("⚠️ Captions not available — falling back to Whisper.")
             return None, None
 
-        # ✅ Parse XML captions
+        # Parse XML captions
         root = ET.fromstring(response.text)
         segments = []
         full_text = ""
@@ -102,26 +102,37 @@ def try_youtube_captions(youtube_url: str):
                 "text": text
             })
 
-        st.info("✅ Used YouTube captions via proxy.")
+        st.success("✅ Captions fetched via proxy.")
         return full_text.strip(), segments
 
     except Exception:
-        # 👇 Always show short fallback
-        st.info("⚠️ YouTube captions not available or blocked. Using Whisper instead.")
+        # Always show same short fallback
+        st.info("⚠️ Captions not available — falling back to Whisper.")
         return None, None
 
 
+# def transcribe_audio(audio_path: str, youtube_url: str = None):
+#     # First try YouTube captions
+#     if youtube_url:
+#         text, segments = try_youtube_captions(youtube_url)
+#         if text:
+#             return text, segments
 
+#     # If not found, fallback to Whisper
+#     st.info("🗣️ Using Whisper for transcription...")
+#     model = whisper.load_model("tiny")
+#     result = model.transcribe(audio_path, verbose=False)
+#     return result["text"], result["segments"]
 
-def transcribe_audio(audio_path: str, youtube_url: str = None):
-    # First try YouTube captions
+def transcribe_audio(audio_path: str, youtube_url: str = None, status_placeholder=None):
     if youtube_url:
-        text, segments = try_youtube_captions(youtube_url)
+        text, segments = try_youtube_captions(youtube_url, status_placeholder)
         if text:
             return text, segments
 
-    # If not found, fallback to Whisper
-    st.info("🗣️ Using Whisper for transcription...")
+    if status_placeholder:
+        status_placeholder.info("🗣️ Using Whisper for transcription...")
+
     model = whisper.load_model("tiny")
     result = model.transcribe(audio_path, verbose=False)
     return result["text"], result["segments"]
