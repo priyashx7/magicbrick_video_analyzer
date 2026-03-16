@@ -1,5 +1,9 @@
 # magicbrick_video_analyzer
 
+## Demo Links:
+Sample video: https://drive.google.com/file/d/1faqnqUHHS12fb3f_xRLnjz9wtk5bv7SA/view?usp=sharing
+Platform: https://magicbrickvideoanalyzer-drclvywysiwaybkwbegappa.streamlit.app/
+
 ## What It Does
 MBTV-Analyzer takes a YouTube video link from the MBTV channel and fully analyzes it to extract structured insights from the content.
 
