@@ -1,9 +1,9 @@
 # magicbrick_video_analyzer
 
-##What It Does
+## What It Does
 MBTV-Analyzer takes a YouTube video link from the MBTV channel and fully analyzes it to extract structured insights from the content.
 
-##What It Extracts
+## What It Extracts
 - Transcript of the full video
 - Summary of the video content
 - Speakers identified in the video
@@ -11,7 +11,7 @@ MBTV-Analyzer takes a YouTube video link from the MBTV channel and fully analyze
 - Key talking points shared by the speaker
 - LinkedIn social profile of the speaker
 
-##Logic Used
+## Logic Used
 - Fetched transcript directly from YouTube captions to speed up processing and avoid redundant transcription
 - If captions unavailable, used OpenAI Whisper (tiny model) to transcribe audio locally as fallback
 - Used meta-llama/llama-3-8b-instruct via OpenRouter to generate video summary and extract speaker insights from transcript and metadata
@@ -22,7 +22,7 @@ MBTV-Analyzer takes a YouTube video link from the MBTV channel and fully analyze
 - Used FFmpeg to trim original video based on matched timestamps
 - Displayed all final clips under a dedicated tab for viewing or downloading short reels
 
-##Tools & Libraries
+## Tools & Libraries
 - Streamlit — interactive web app UI
 - yt-dlp — downloads YouTube video and audio
 - YouTube Transcript API — fetches native YouTube captions
